@@ -22,7 +22,7 @@ sub asDimensionalAnalysis {
 	my $self = shift;
 	my $given = shift;
 	my $options = shift;	
-
+	
 	my $gradeGiven = 0;
 	if (exists $options->{gradeGiven}){
 		$gradeGiven = $options->{gradeGiven};
@@ -91,7 +91,6 @@ sub asDimensionalAnalysis {
 					my $a = $ratio+0;
 					$a =  main::Round($a,15);
 					my $b = $studentInverseRatio->valueAsNumber +0;
-					
 					# comparing as string values to avoid floating point errors in comparison.  
 					# 1000 != 1/0.001 in floating point math even though we know they are equal.
 					# This MAY have an impact on precision tolerances. However, it would be odd to assume
@@ -104,7 +103,7 @@ sub asDimensionalAnalysis {
 						if ($denominator->sigFigs != 9**9**9){
 							$studentArray[$i+1] = InexactValueWithUnits::InexactValueWithUnits->new([$denominator->valueAsNumber,9**9**9], $denominator->{units});
 						}
-					} 
+					}
 				} elsif (BetterUnits::isMolarRatio($numerator->{units_ref}, $denominator->{units_ref})) {
 					if ($numerator->sigFigs != 9**9**9){
 						$studentArray[$i] = InexactValueWithUnits::InexactValueWithUnits->new([$numerator->valueAsNumber,9**9**9], $numerator->{units});
@@ -129,6 +128,7 @@ sub asDimensionalAnalysis {
 				# warn $studentCalc;
 				# warn 'next';
 			}
+			
 
 			$ansHash->setMessage(scalar @studentArray,"Your dimensional analysis returns this value: $studentCalc");
 
@@ -167,7 +167,6 @@ sub asDimensionalAnalysis {
 			# Remove the answer from the correct array and student array
 			$correctAnswer = pop @correctArray;
 			$studentAnswer = pop @studentArray;
-			
 			while (scalar @studentArray > 1) {
 
 				$numerator = shift @studentArray;
@@ -191,12 +190,17 @@ sub asDimensionalAnalysis {
 					#if (BetterUnits::compareUnitRefs($correctArray[$j]->{units_ref},$numerator->{units_ref}) && BetterUnits::compareUnitRefs($correctArray[$j+1]->{units_ref},$denominator->{units_ref})){
 					if (BetterUnits::compareUnitRefs($answerDiv->{units_ref},$studentDiv->{units_ref})) {
 						# if answer is an exact number (like 12 inches in 1 ft), student's input of 12 will automatically be inexact, so just tolerate sig fig "errors" if answer is exact
+						
 						$numeratorCreditSigFigs = 0.5;
 						$numeratorCreditValue = 0.5;
 						if ($correctArray[$j]->{inexactValue}->sigFigs() == Inf){
 							$numeratorCreditSigFigs = 0;
 							$numeratorCreditValue = 1.0;
 						}
+						#warn $numerator->{inexactValue}->sigFigs();
+						#warn $correctArray[$j]->{inexactValue}->sigFigs();
+						# warn $correctArray[$j]->{inexactValue};
+						# warn $numerator->{inexactValue};
 						$valueGradeNumerator = $correctArray[$j]->{inexactValue}->compareValue($numerator->{inexactValue},{"creditSigFigs"=>$numeratorCreditSigFigs, "creditValue"=>$numeratorCreditValue, "failOnValueWrong"=>1});
 						$numeratorScore = $valueGradeNumerator;
 						if ($numeratorScore != 0 && $numeratorScore != 1){
@@ -246,10 +250,13 @@ sub asDimensionalAnalysis {
 				my $numerator = $correctArray[$i];
 				my $denominator = $correctArray[$i+1];
 				if ($numerator->{inexactValue}->sigFigs > 1 && $numerator->{inexactValue}->sigFigs != 9**9**9) {
+					# We're making a copy of the numerator, THEN editing the sig figs, THEN making a new numerator using the rounded value with new sig figs.
+					$numerator = InexactValueWithUnits::InexactValueWithUnits->new($numerator->{inexactValue}->valueAsRoundedNumber, $numerator->{units});
 					$numerator->{inexactValue}->sigFigs($numerator->{inexactValue}->sigFigs() - 1);
 					$numerator = InexactValueWithUnits::InexactValueWithUnits->new($numerator->{inexactValue}->valueAsRoundedNumber, $numerator->{units});
 				}
 				if ($denominator->{inexactValue}->sigFigs > 1 && $denominator->{inexactValue}->sigFigs != 9**9**9) {
+					$denominator = InexactValueWithUnits::InexactValueWithUnits->new($denominator->{inexactValue}->valueAsRoundedNumber, $denominator->{units});
 					$denominator->{inexactValue}->sigFigs($denominator->{inexactValue}->sigFigs() - 1);
 					$denominator = InexactValueWithUnits::InexactValueWithUnits->new($denominator->{inexactValue}->valueAsRoundedNumber, $denominator->{units});
 				}
@@ -260,13 +267,16 @@ sub asDimensionalAnalysis {
 
 			my $roundingErrorAnswer = $given;
 			for ($i = $factorIndexStart; $i < scalar @correctArray - 1; $i+=2) {
-				my $numerator = $correctArray[$i];
-				my $denominator = $correctArray[$i+1];
+				my $numerator = $correctArray[$i]->copy;
+				my $denominator = $correctArray[$i+1]->copy;
 				if ($numerator->{inexactValue}->sigFigs > 1 && $numerator->{inexactValue}->sigFigs != 9**9**9) {
+					# We're making a copy of the numerator, THEN editing the sig figs, THEN making a new numerator using the rounded value with new sig figs.
+					$numerator = InexactValueWithUnits::InexactValueWithUnits->new($numerator->{inexactValue}->valueAsRoundedNumber, $numerator->{units});
 					$numerator->{inexactValue}->sigFigs($numerator->{inexactValue}->sigFigs() - 1);
 					$numerator = InexactValueWithUnits::InexactValueWithUnits->new($numerator->{inexactValue}->valueAsRoundedNumber, $numerator->{units});
 				}
 				if ($denominator->{inexactValue}->sigFigs > 1 && $denominator->{inexactValue}->sigFigs != 9**9**9) {
+					$denominator = InexactValueWithUnits::InexactValueWithUnits->new($denominator->{inexactValue}->valueAsRoundedNumber, $denominator->{units});
 					$denominator->{inexactValue}->sigFigs($denominator->{inexactValue}->sigFigs() - 1);
 					$denominator = InexactValueWithUnits::InexactValueWithUnits->new($denominator->{inexactValue}->valueAsRoundedNumber, $denominator->{units});
 				}
@@ -296,7 +306,7 @@ sub asDimensionalAnalysis {
 			if ($message ne ''){
 				$ansHash->setMessage($count,$message);
 			}
-			
+
 			return \@scores;
 		}
 	);
