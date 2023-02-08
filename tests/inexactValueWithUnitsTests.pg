@@ -43,6 +43,8 @@
       ['1.30e3 M^-4 s^-1', {value=> 1300, sf=> 3, units=> 'M^-4 s^-1',unitHash=> {factor=>1e-12,'m' => 12,'s'=>-1,'mol'=>-4}, string=>'1.30x10^3 M^-4 s^-1', TeX=>'1.30\times 10^{3}\ {\rm M^{-4}\,s^{-1}}'}],
       ['1.30e3 1/M^4*s^1', {value=> 1300, sf=> 3, units=> '1/M^4*s^1',unitHash=> {factor=>1e-12,'m' => 12,'s'=>-1,'mol'=>-4}, string=>'1.30x10^3 1/M^4*s^1', TeX=>'1.30\times 10^{3}\ {\textstyle\frac{\rm\mathstrut 1}{\rm\mathstrut M^{4}\,s^{1}}}'}],
       ['1.30e3 /M^4*s^1', {value=> 1300, sf=> 3, units=> '/M^4*s^1',unitHash=> {factor=>1e-12,'m' => 12,'s'=>-1,'mol'=>-4}, string=>'1.30x10^3 /M^4*s^1', TeX=>'1.30\times 10^{3}\ {\textstyle\frac{\rm\mathstrut }{\rm\mathstrut M^{4}\,s^{1}}}'}],
+      ['1.30e3 (M^4)/(s^1)', {value=> 1300, sf=> 3, units=> '(M^4)/(s^1)',unitHash=> {factor=>1e12,'m' => -12,'s'=>-1,'mol'=>4}, string=>'1.30x10^3 (M^4)/(s^1)', TeX=>'1.30\times 10^{3}\ {\textstyle\frac{\rm\mathstrut (M^{4})}{\rm\mathstrut (s^{1})}}'}],
+      ['1.30e3 (kg*m^2)/(s^2)', {value=> 1300, sf=> 3, units=> '(kg*m^2)/(s^2)',unitHash=> {factor=>1,'m' => 2,'s'=>-2,'kg'=>1}, string=>'1.30x10^3 (kg*m^2)/(s^2)', TeX=>'1.30\times 10^{3}\ {\textstyle\frac{\rm\mathstrut (kg\,m^{2})}{\rm\mathstrut (s^{2})}}'}],
    );
 
    $html = '
@@ -76,14 +78,48 @@
       </tr>
       ';
 
-   sub hashPrint {
-      $hashRef = shift;
-      %hash = %$hashRef;
-      $output='';
-      while(my($k, $v) = each %hash) { 
-         $output .= "$k: $v<br/>";
+   sub addTabs {
+      my $level = shift;
+      my $output='';
+      for ($l = 0; $l < $level; $l++){
+         $output .='&#9;'
       }
       return $output;
+   }
+
+   sub hashPrint {
+      my $hashRef = shift;
+      my $level = shift;
+      my %hash = %$hashRef;
+      my $output=addTabs($level) . '{<br/>';
+      
+      while(my($k, $v) = each %hash) { 
+         if (ref($v) eq 'HASH'){
+            #$output .= ref($v) . '<br/>';
+            $output .= addTabs($level+1) . "$k: <br/>" . hashPrint($v, $level+1) . '}';
+         } elsif (ref($v) eq 'ARRAY') {
+            $output .= addTabs($level+1) . "$k: " . arrayPrint($v);
+         } else {
+            $output .= addTabs($level+1) . "$k: $v<br/>";
+         }
+      }
+      return $output . addTabs($level) . '}';
+   }
+   sub arrayPrint {
+      my $arrayRef = shift; 
+      my $level = shift;
+      my @array = @$arrayRef;
+      my $output=addTabs($level) . '[';
+      foreach my $a (@array) {
+         if (ref($a) eq 'HASH'){
+            $output .= addTabs($level) . '<br/>' . hashPrint($a, $level+1) . ', ' ;
+         }elsif (ref($v) eq 'ARRAY') {
+            $output .= addTabs($level) . arrayPrint($a) . ', ';
+         } else {
+            $output .= addTabs($level) . $a . ', ';
+         }
+      }
+      return $output . '],<br/>';
    }
 
    foreach $dataItem (@data){
@@ -124,20 +160,20 @@
       }
       $html .= $testValue->{units} . "</td>";
 
-      if ($expected->{unitHash}){
+      if (defined($expected->{unitHash})){
          if (InexactValueWithUnits::InexactValueWithUnits::compareUnitHash($testValue->{units_ref}, $expected->{unitHash})) {
          #if ($expected->{units} eq $testValue->{units}){
-            $html .= "<td>";
+            $html .= "<td><pre>";
          } else {
-            $html .= "<td class='wrong'>";
+            $html .= "<td class='wrong'><pre>";
             $errorMessage .= "Expected value: " . hashPrint($expected->{unitHash}) . "<br/>";
             $success=0;
          }
       } else{
-            $html .= "<td class='unknown'>";
+            $html .= "<td class='unknown'><pre>";
         
       }
-      $html .= hashPrint($testValue->{units_ref}) . "</td>";
+      $html .= hashPrint($testValue->{units_ref}) . "</pre></td>";
       
       $stringA = $expected->{string};
       $stringB = $testValue->string();
