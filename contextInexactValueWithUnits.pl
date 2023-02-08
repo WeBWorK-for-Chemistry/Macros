@@ -702,7 +702,8 @@ sub TeXunits {
 		#warn 'after: ' . $units;
 	}
 	$units =~ s/^\s+//;  # removes leading whitespace if present
-	$units =~ s/\^\(?([-+]?\d+)\)?/^{$1}/g; # fixes exponents
+	#$units =~ s/\^\(?([-+]?\d+)\)?/^{$1}/g; # fixes exponents
+	$units =~ s/(?:\^([-+]?\d+))|(?:\^\(([-+]?\d+)\))/^{$1}/g; # fixes exponents, new version removes parentheses cleanly
 	$units =~ s/\*/\\,/g; 
 	$units =~ s/%/\\%/g;
 	$units =~ s/μ/\\mu /g;
@@ -1039,7 +1040,6 @@ sub compareUnitHash {
 	# so that we can compare with a student made hash that may not have the parsed item in it yet.
 	delete($left{'parsed'});
 	delete($right{'parsed'});
-
 
 	# from https://stackoverflow.com/questions/1273616/how-do-i-compare-two-hashes-in-perl-without-using-datacompare
 	# same number of keys?

@@ -1004,9 +1004,24 @@ sub process_unit {
 	
 	die ("UNIT ERROR: No units were defined.") unless defined($string);  #
 	#split the string into numerator and denominator --- the separator is /
-	my ($numerator,$denominator) = split( m{/}, $string );
+	my ($numerator,$denominator) = split( m/\//, $string );
+
+	# MathQuill adds parentheses around numerator and denominator sometimes.  We should check for them and remove them.
+	# This is probably good practice because anyone could do this.
+	# However, must check for pairs at beginning and end.  We should check in the factor splitting 
+	# if individual factors have parentheses, too.
+
+	if (defined($numerator)){
+		($numerator) = $numerator =~ /^(?:\(?)(.+?)(?:\)?)$/;
+	}
+	
+	if (defined($denominator)){
+		($denominator) = $denominator =~ /^(?:\(?)(.+?)(?:\)?)$/;
+	}
+
 	# warn "numerator: $numerator";
 	# warn "denominator: $denominator";
+	$numerator = "" unless defined($numerator);
 	$numerator = "" if ($numerator eq '1');  # prevent the 1 from getting recognized as anything.
 	$denominator = "" unless defined($denominator);
 
@@ -1353,7 +1368,7 @@ sub process_factor {
 
 	my $fundamental_units = \%fundamental_units;
 	my $known_units = \%known_units;
-	
+
 	if (defined($options->{fundamental_units})) {
 		$fundamental_units = $options->{fundamental_units};
 	} else {

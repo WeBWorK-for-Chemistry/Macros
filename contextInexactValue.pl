@@ -470,7 +470,6 @@ sub string {
 
 		if ($preventClean) {
 			if ($decimals == $inf){
-
 				return sprintf("%e", $self->roundingHack($valAsNumber));
 			} else {
 				$log = main::floor(log(abs($valAsNumber))/log(10));
@@ -546,7 +545,7 @@ sub string {
 						# There was a major bug here.  Using sprintf actually rounds when all we want is to truncate the decimal part.
 						$nondecimalPartAbs = int(abs($self->roundingHack($valAsNumber)));
 						$sign = $valAsNumber >= 0;
-						# if there are more sig figs than the whole part of the number
+						# if there are more sig figs than the whole part of the number (i.e. 12 with 4 sig figs)
 						if ($self->sigFigs() > length($nondecimalPartAbs)) {
 							# there is definitely a decimal, count how many places
 							$fixedDecimal = $self->sigFigs() - length($nondecimalPartAbs);
@@ -576,12 +575,12 @@ sub string {
 							# the problem is that without the pre-rounding, a number like 1996 rounded to 1 sig fig should be 2000
 							# but the algorithm thought there weren't enough zeros to show 1 sig fig with 1996.  So we have to do the rounding here, 
 							# then test. 
-							$digits = $self->sigFigs() - 1;  
-							       
+							
 							#$nondecimalPartAbs = sprintf("%.${digits}e", $self->roundingHack($valAsNumber));
-
+							$sigfigs = $self->sigFigs();
+							$digits = length($valAsNumber) - $self->sigFigs();  
 							# negative value for digits because we are rounding non-decimal digits.
-							$nondecimalPartAbs = sprintf("%.${digits}e", main::Round($valAsNumber, -$digits));  
+							$nondecimalPartAbs = sprintf("%.${sigfigs}e", main::Round($valAsNumber, $digits * -1));
 							$nondecimalPartAbs = sprintf("%.0f", abs($nondecimalPartAbs));
 
 							$firstNonZeroDigitIndex = 0;
@@ -592,26 +591,29 @@ sub string {
 								}
 								$firstNonZeroDigitIndex++;
 							}
+
 							if ((length($nondecimalPartAbs) - $firstNonZeroDigitIndex) == $self->sigFigs()) {
 								# we have just trailing zeros to make the sigfigs match without reverting 
 								# to scientific notation
+								$temp = ($sign ? '' : '-') . $nondecimalPartAbs;
 								return ($sign ? '' : '-') . $nondecimalPartAbs;
 
 							} else {
 								# have to use scientific, there's no way to write the number using standard notation
 								$digits = $self->sigFigs() - 1;
-							
+								#$digits = length($valAsNumber) - $self->sigFigs();  
+								
 								if ($preventClean) {
 									return sprintf("%.${digits}e", main::Round($valAsNumber, $digits));
-									#return sprintf("%.${digits}e", $self->roundingHack($valAsNumber));
 								} else {
+
 									return $self->cleanSciText(sprintf("%.${digits}e", main::Round($valAsNumber, $digits)));
-									#return $self->cleanSciText(sprintf("%.${digits}e", $self->roundingHack($valAsNumber)));
 								}
 								
 							}
-						}
+						} 
 					} else {
+						# must make scientific, past threshold set.  (remember: value is greater than one here)
 						$digits = $self->sigFigs() - 1;
 						# if ($digits eq "Inf"){
 						# 	return sprintf("%.0f", $self->roundingHack($valAsNumber));
