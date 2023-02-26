@@ -1012,11 +1012,19 @@ sub process_unit {
 	# if individual factors have parentheses, too.
 
 	if (defined($numerator)){
-		($numerator) = $numerator =~ /^(?:\(?)(.+?)(?:\)?)$/;
+		if ($numerator =~ /^(\()?(?(1)(.+?)(?:\))\$|(.+?)\$)/){  # /^(?:\(?)(.+?)(?:\)?)$/;
+			$numerator = $2;
+			# This is a new paretheses pattern matching regex.  A conditional check for leading parentheses 
+			# will then require a trailing parentheses match.  Otherwise, it just returns it all.
+		}
 	}
 	
 	if (defined($denominator)){
-		($denominator) = $denominator =~ /^(?:\(?)(.+?)(?:\)?)$/;
+		if ($denominator =~ /^(\()?(?(1)(.+?)(?:\))\$|(.+?)\$)/){  
+			$denominator = $2;
+			# This is a new paretheses pattern matching regex.  A conditional check for leading parentheses 
+			# will then require a trailing parentheses match.  Otherwise, it just returns it all.
+		}
 	}
 
 	# warn "numerator: $numerator";

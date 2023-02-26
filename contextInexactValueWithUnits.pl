@@ -206,7 +206,7 @@ sub new {
 
 	my %Units = $units ? getUnits($units) : %fundamental_units;
 
-	#warn %Units;
+	#warn %{%Units{piggybackUnit}};
 
 	# This is a hack to get proper formating for chemicals as units.  Since units are stored in plain text (not as Chemical objects), we need
 	# to get their proper formats when the unit parsing is done.  Since that only returns a unit_hash, we're piggybacking on that and removing it
@@ -680,7 +680,8 @@ sub TeX {
 #
 sub TeXunits {
 	my $units = shift;
-
+	# warn %unitTranslation;
+	# warn $units;
 	# check if any units can be "translated".  i.e. chemical units that need to be formated properly;
 	foreach my $k (keys %unitTranslation){
 		#warn 'before: ' . $units;
@@ -692,15 +693,20 @@ sub TeXunits {
 		if (exists $special->{leading} && $special->{leading} ne ''){
 			#warn 'leading: ' . $special->{leading} . '<';
 			$leading = $special->{leading};
+			# warn "key: ". $k;
+			# warn "leading: " . $leading;
+			# warn "special: " .  $special;
+			# warn "specialTeX: " .  $special->TeX();
 			$s = $leading . '\\,' . $special->TeX();
 		} else {
 			$s = $special->TeX();
 		}
 		#my $s = $leading . '\\,' . $special->TeX();
-		
+		# The Slash Q regex makes it match EXACTLY what's in the variable. i.e. if variable has parentheses, they're matched as parentheses, not regex chars.  
 		$units =~ s/\Q$k/$s/;
 		#warn 'after: ' . $units;
 	}
+	# warn $units;
 	$units =~ s/^\s+//;  # removes leading whitespace if present
 	#$units =~ s/\^\(?([-+]?\d+)\)?/^{$1}/g; # fixes exponents
 	$units =~ s/(?:\^([-+]?\d+))|(?:\^\(([-+]?\d+)\))/^{$1}/g; # fixes exponents, new version removes parentheses cleanly
@@ -708,6 +714,7 @@ sub TeXunits {
 	$units =~ s/%/\\%/g;
 	$units =~ s/μ/\\mu /g;
 	$units =~ s/ /\\,/g;  # example: adds space between 'fl oz'
+	# warn $units;
 	return '{\rm '.$units.'}' unless $units =~ m!^(.*)/(.*)$!;
 	my $displayMode = $main::displayMode;
 	return '{\textstyle\frac{'.$1.'}{'.$2.'}}' if ($displayMode eq 'HTML_tth');
@@ -805,7 +812,7 @@ sub mult {
 	$newUnitString = combineStringUnitsCleanly($left->{units}, $right->{units}, 1, $newOptions);
 	#warn "AFTER MULTIPLY $newUnitString";
 	$result = $self->new([$newInexact->valueAsNumber, $newInexact->sigFigs], $newUnitString);
-	
+
 	return $result;
 }
 
@@ -1136,8 +1143,6 @@ sub process_term_for_stringCombine {
   	my @known_unit_hash_array = ();
 	#my %unit_hash = %$fundamental_units;
 	if ($string) {
-
-		
 
 		# Split the numerator or denominator into factors -- the separators are * and blank space (assuming it's not part of a known unit)
 		# The system will always use * for separating terms.  i.e. after multiplying two numbers with units an asterix is used to separate the terms
